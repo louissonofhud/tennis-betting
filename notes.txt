@@ -1,0 +1,12 @@
+[From perspective of winner]
+Service 
+
+He had the opportunity to serve (excluding second serves) w_svpt times
+He got w_1stIn serves in first meaing that his serve accuracy was w_1stIn/w_svpt
+He scored w_1stWon of points when his first serve was in - (w_1stWon/w_1stIn * 100)% of points when the first serve was in 
+He scored w_2ndWon of points when his second serve was in - (w_2ndWon/[w_svpt - w_1stIn] * 100)% of points when the second serve was in
+He won a total of w_1stWon + w_2ndWon of points when serving - ([w_1stWon + w_2ndWon]/w_svpt * 100)% 
+
+Return 
+
+He won the point on return l_svpt - (l_1stWon + l_2ndWon) times - ([l_svpt - (l_1stWon + l_2ndWon)]/l_svpt * 100)% return point win %

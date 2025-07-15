@@ -1,0 +1,36 @@
+| **Feature Name**                   | **Datatype** | **Impact on Target Variable**                                                     | **Data Source**                           |
+| ---------------------------------- | ------------ | --------------------------------------------------------------------------------- | ----------------------------------------- |
+| `player1_return_points_won_pct`    | Numerical    | High return % → more breaks → **fewer total games**                               | Same                                      |
+| `player2_return_points_won_pct`    | Numerical    | Same                                                                              | Same                                      |
+| `player1_1st_serve_pct`            | Numerical    | High % → more service points won → **more games**                                 | Same                                      |
+| `player2_1st_serve_pct`            | Numerical    | Same                                                                              | Same                                      |
+| `player1_1st_serve_points_won_pct` | Numerical    | Strong first serve → more holds → **more games**                                  | Same                                      |
+| `player2_1st_serve_points_won_pct` | Numerical    | Same                                                                              | Same                                      |
+| `player1_2nd_serve_points_won_pct` | Numerical    | Resilience on second serve → fewer breaks → **more games**                        | Same                                      |
+| `player2_2nd_serve_points_won_pct` | Numerical    | Same                                                                              | Same                                      |
+| `player1_ace_rate`                 | Numerical    | Proxy for serve dominance → more holds → **more games**                           | Tennis Abstract or computed               |
+| `player2_ace_rate`                 | Numerical    | Same                                                                              | Same                                      |
+| `player1_double_fault_rate`        | Numerical    | High rate → more breaks → **fewer games**                                         | Same                                      |
+| `player2_double_fault_rate`        | Numerical    | Same                                                                              | Same                                      |
+| `player1_avg_games_per_set`        | Numerical    | Higher average = longer sets → **more total games**                               | Computed from match history               |
+| `player2_avg_games_per_set`        | Numerical    | Same                                                                              | Computed                                  |
+| `player1_tiebreak_frequency`       | Numerical    | Frequent tiebreaks suggest close sets → **more total games**                      | Computed                                  |
+| `player2_tiebreak_frequency`       | Numerical    | Same                                                                              | Computed                                  |
+| `player1_recent_fatigue_score`     | Numerical    | High fatigue → worse performance → more breaks → **fewer games**                  | Computed (e.g. matches in past 7 days)    |
+| `player2_recent_fatigue_score`     | Numerical    | Same                                                                              | Computed                                  |
+| `player1_rank_points`              | Numerical    | Higher points = better recent performance → may win quickly → **fewer games**     | Jeff Sackmann `atp_matches`               |
+| `player2_rank_points`              | Numerical    | Same                                                                              | Same                                      |
+| `rank_points_diff`                 | Numerical    | Large difference = more likely blowout → **fewer games**                          | Computed                                  |
+| `rank_points_sum`                  | Numerical    | Two strong players = higher match quality → **more games likely**                 | Computed                                  |
+| `h2h_avg_total_games`              | Numerical    | High average in past matchups → likely close contest → **more games**             | Tennis Abstract (or scraped from ATP/WTA) |
+| `surface`                          | Categorical  | Affects rally length and break frequency (e.g. clay = more breaks, grass = fewer) | Jeff Sackmann `atp_matches`               |
+| `tournament_level`                 | Categorical  | ITF/Challenger = more mismatches → **fewer games on average**                     | Same                                      |
+| `round`                            | Categorical  | Finals often more balanced → early rounds may be one-sided                        | Same                                      |
+| `match_format`                     | Categorical  | Best-of-5 = higher potential total games than best-of-3                           | Same                                      |
+| `is_home_court_player1`            | Boolean      | Possible boost in performance if player is at home                                | Computed from nationality vs location     |
+| `is_home_court_player2`            | Boolean      | Same                                                                              | Same                                      |
+| `altitude`                         | Numerical    | Higher = faster courts → more service holds → **more games**                      | Tournament metadata or geolocation        |
+| `days_since_last_match_p1`         | Numerical    | Rested = better performance → but long layoff might hurt rhythm                   | Computed                                  |
+| `days_since_last_match_p2`         | Numerical    | Same                                                                              | Computed                                  |
+| `player1_recent_win_pct`           | Numerical    | Good form → likely to dominate → **fewer games** if opponent is weak              | Computed from past N matches              |
+| `player2_recent_win_pct`           | Numerical    | Same                                                                              | Computed                                  |
