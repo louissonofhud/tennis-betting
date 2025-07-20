@@ -137,6 +137,7 @@ def to_average(player_matches: pd.DataFrame, lookback: int=10) -> pd.DataFrame:
         "round",
         "best_of",
         "player_name",
+        "player_rank_points",
         "opponent_name",    
     ]
 
