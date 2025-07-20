@@ -10,3 +10,8 @@ He won a total of w_1stWon + w_2ndWon of points when serving - ([w_1stWon + w_2n
 Return 
 
 He won the point on return l_svpt - (l_1stWon + l_2ndWon) times - ([l_svpt - (l_1stWon + l_2ndWon)]/l_svpt * 100)% return point win %
+
+Fatigue stats
+
+Sets played in tournament
+Days since last tournament entry
