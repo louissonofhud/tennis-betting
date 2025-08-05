@@ -14,6 +14,7 @@ class TennisDataProcessor:
         for s in sets:
             # Remove tiebreak info in parentheses
             s_clean = re.sub(r'\(.*?\)', '', s)
+            s_clean = re.sub(r'\[.*?\]', '', s_clean)
             # Split by '-' and sum games
             if '-' in s_clean:
                 try:
@@ -41,11 +42,12 @@ class TennisDataProcessor:
         self.data.loc[:, "w_df_rate"] = self.data["w_df"]/self.data["w_svpt"]
         self.data.loc[:, "l_df_rate"] = self.data["l_df"]/self.data["l_svpt"]
 
-        self.data.loc[:, "games_per_set"] = self.data["score"].apply(self.get_games_per_set)
-        self.data.loc[:, "total_games"] = self.data["games_per_set"].apply(sum)
+        self.data.loc[:, "games_in_sets"] = self.data["score"].apply(self.get_games_per_set)
+        self.data.loc[:, "total_games"] = self.data["games_in_sets"].apply(sum)
         self.data.loc[:, "set_count"] = self.data["score"].apply(lambda x: x.split()).apply(len)
 
-        self.data.loc[:, "tiebreak_count"] = self.data["games_per_set"].apply(lambda x: x.count(13))
+        self.data.loc[:, "tiebreak_count"] = self.data["games_in_sets"].apply(lambda x: x.count(13))
+        self.data.loc[:, "gps"] = self.data["total_games"] / self.data["set_count"]
 
         filtered_data = self.data[
                             [
@@ -70,15 +72,18 @@ class TennisDataProcessor:
                                 "l_ace_rate",
                                 "w_df_rate",
                                 "l_df_rate",
-                                'games_per_set',
+                                'games_in_sets',
+                                "score",
                                 'set_count',
                                 'tiebreak_count',
                                 "total_games",
+                                "gps",
                                 "winner_rank_points",
                                 "loser_rank_points",
                             ]
                         ]
         filtered_data = filtered_data.dropna(axis=0)
+        filtered_data.loc[:, "advantage_set"] = filtered_data["games_in_sets"].apply(lambda x: x[-1] > 13)
         filtered_data["tourney_date"] = pd.to_datetime(filtered_data["tourney_date"], format="%Y%m%d")
         filtered_data = filtered_data.loc[filtered_data["round"].isin(["RR", "R128", "R64", "R32", "R16", "QF", "SF", "F"])]
         filtered_data["round"] = pd.Categorical(filtered_data["round"], categories=TennisDataProcessor.ROUND_ORDER, ordered=True)
@@ -86,6 +91,8 @@ class TennisDataProcessor:
             "winner_rank_points": "w_rank_points",
             "loser_rank_points": "l_rank_points"
         })
+
+
 
 
         return filtered_data
@@ -116,7 +123,7 @@ def to_player(name: str, derived_data: pd.DataFrame) -> pd.DataFrame:
         col for col in player_matches.columns if col.startswith(("w_", "l_", "winner_", "loser_"))
     ])
     
-    cols = ['tourney_date', 'tourney_name', 'surface', 'round', 'result', "tourney_level", "best_of", "games_per_set", "set_count", "tiebreak_count", "total_games"]
+    cols = ['tourney_date', 'tourney_name', 'surface', 'round', 'result', "tourney_level", "best_of", "games_in_sets", "set_count", "tiebreak_count", "total_games", "gps"]
 
     cols += [col for col in player_matches.columns if col.startswith('player_')]
     cols += [col for col in player_matches.columns if col.startswith('opponent_')]
@@ -128,7 +135,7 @@ def to_player(name: str, derived_data: pd.DataFrame) -> pd.DataFrame:
 def to_average(player_matches: pd.DataFrame, lookback: int=10) -> pd.DataFrame:
     stats_cols = [col for col in player_matches.columns if col.startswith("player_") and (col.endswith("_pct") or col.endswith("_rate") or col.endswith("_acc"))]
     for col in stats_cols:
-        player_matches[col + "_avg"] = player_matches[col].rolling(lookback).mean().shift(1) # maybe median here?
+        player_matches[col + "_avg"] = player_matches[col].rolling(lookback).mean().shift(1) # maybe median here? Markov chain?
     cols = [
         "surface",
         "tourney_level",
@@ -144,7 +151,7 @@ def to_average(player_matches: pd.DataFrame, lookback: int=10) -> pd.DataFrame:
     for col in stats_cols:
         cols += [col, col + "_avg"]
 
-    cols += ["result", "set_count", "tiebreak_count", "games_per_set", "total_games"]
+    cols += ["result", "set_count", "tiebreak_count", "games_in_sets", "total_games", "gps"]
 
     return player_matches[cols]
 
@@ -166,3 +173,13 @@ def get_fatigue_stats(player_data: pd.DataFrame) -> pd.DataFrame:
     player_data["games_played_last_30_days"] = result     
 
     return player_data
+# This function you are working on
+def final_join(player_1, player_2):
+    match_keys = ['surface', 'tourney_level', 'tourney_date', 'tourney_name', 'round', 'best_of']
+    df = pd.merge(
+        player_1,
+        player_2,
+        on=match_keys,
+        suffixes=('_player1', '_player_2'),
+        how='inner'
+    )
