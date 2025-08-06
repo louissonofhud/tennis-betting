@@ -52,6 +52,7 @@ class TennisDataProcessor:
         filtered_data = self.data[
                             [
                                 'tourney_id',
+                                "match_num",
                                 'tourney_name',
                                 'surface',
                                 'tourney_level',
@@ -97,6 +98,7 @@ class TennisDataProcessor:
 
         return filtered_data
 
+MATCH_KEYS = ['surface', 'tourney_level', 'tourney_date', 'tourney_name', 'round', 'best_of', "match_num"]
 def to_player(name: str, derived_data: pd.DataFrame) -> pd.DataFrame:
     player_matches = derived_data[
         (derived_data["winner_name"] == name) | (derived_data["loser_name"] == name)
@@ -123,7 +125,7 @@ def to_player(name: str, derived_data: pd.DataFrame) -> pd.DataFrame:
         col for col in player_matches.columns if col.startswith(("w_", "l_", "winner_", "loser_"))
     ])
     
-    cols = ['tourney_date', 'tourney_name', 'surface', 'round', 'result', "tourney_level", "best_of", "games_in_sets", "set_count", "tiebreak_count", "total_games", "gps"]
+    cols = ['tourney_date', "match_num", 'tourney_name', 'surface', 'round', 'result', "tourney_level", "best_of", "games_in_sets", "set_count", "tiebreak_count", "total_games", "gps"]
 
     cols += [col for col in player_matches.columns if col.startswith('player_')]
     cols += [col for col in player_matches.columns if col.startswith('opponent_')]
@@ -138,6 +140,7 @@ def to_average(player_matches: pd.DataFrame, lookback: int=10) -> pd.DataFrame:
         player_matches[col + "_avg"] = player_matches[col].rolling(lookback).mean().shift(1) # maybe median here? Markov chain?
     cols = [
         "surface",
+        "match_num",
         "tourney_level",
         "tourney_date",
         "tourney_name",
@@ -173,13 +176,81 @@ def get_fatigue_stats(player_data: pd.DataFrame) -> pd.DataFrame:
     player_data["games_played_last_30_days"] = result     
 
     return player_data
-# This function you are working on
-def final_join(player_1, player_2):
-    match_keys = ['surface', 'tourney_level', 'tourney_date', 'tourney_name', 'round', 'best_of']
-    df = pd.merge(
-        player_1,
-        player_2,
-        on=match_keys,
-        suffixes=('_player1', '_player_2'),
+
+def reorder_players(row):
+    if row['result_player1'] == 'win':
+        winner = {f'winner_{col.replace("_player1", "")}': row[col] for col in row.index if '_player1' in col}
+        loser = {f'loser_{col.replace("_player2", "")}': row[col] for col in row.index if '_player2' in col}
+    else:
+        winner = {f'winner_{col.replace("_player2", "")}': row[col] for col in row.index if '_player2' in col}
+        loser = {f'loser_{col.replace("_player1", "")}': row[col] for col in row.index if '_player1' in col}
+
+    match_data = {key: row[key] for key in MATCH_KEYS}
+    return pd.Series({**match_data, **winner, **loser})
+
+def merge_tables(list_of_dfs):
+    concat_tables = pd.concat(list_of_dfs)
+    duplicated = pd.merge(
+        concat_tables,
+        concat_tables,
+        on=MATCH_KEYS,
+        suffixes=('_player1', '_player2'),
         how='inner'
     )
+    deduped = duplicated.loc[duplicated['player_name_player1'] != duplicated['player_name_player2']]
+    deduped = deduped[
+        deduped['player_name_player1'] < deduped['player_name_player2']
+    ].apply(reorder_players, axis=1)
+    
+    return deduped[[
+        'surface',
+        "match_num",
+        'tourney_level',
+        'tourney_date',
+        'tourney_name',
+        'round',
+        'best_of',
+        'winner_player_name',
+        'winner_player_rank_points',
+        'winner_player_ace_rate',
+        'winner_player_ace_rate_avg',
+        'winner_player_df_rate',
+        'winner_player_df_rate_avg',
+        'winner_player_1stWon_pct',
+        'winner_player_1stWon_pct_avg',
+        'winner_player_2ndWon_pct',
+        'winner_player_2ndWon_pct_avg',
+        'winner_player_1stsv_acc',
+        'winner_player_1stsv_acc_avg',
+        'winner_player_rt_won_pct',
+        'winner_player_rt_won_pct_avg',
+        'winner_games_played_tournament',
+        'winner_games_played_last_30_days',
+        'loser_player_name',
+        'loser_player_rank_points',
+        'loser_player_ace_rate',
+        'loser_player_ace_rate_avg',
+        'loser_player_df_rate',
+        'loser_player_df_rate_avg',
+        'loser_player_1stWon_pct',
+        'loser_player_1stWon_pct_avg',
+        'loser_player_2ndWon_pct',
+        'loser_player_2ndWon_pct_avg',
+        'loser_player_1stsv_acc',
+        'loser_player_1stsv_acc_avg',
+        'loser_player_rt_won_pct',
+        'loser_player_rt_won_pct_avg',
+        'loser_games_played_tournament', 
+        'loser_games_played_last_30_days', 
+        'winner_set_count', # keep dupe
+        'winner_tiebreak_count', # keep dupe
+        'winner_games_in_sets', # keep dupe
+        'winner_total_games', # keep dupe
+        'winner_gps', # keep dupe
+    ]].rename(columns={
+        col:col.replace("player_", "") for col in deduped.columns
+    } | {'winner_set_count':"set_count",
+        'winner_tiebreak_count':"tiebreak_count",
+        'winner_games_in_sets':"games_in_sets",
+        'winner_total_games':"total_games",
+        'winner_gps':"gps"})
